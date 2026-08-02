@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import {User} from "../models/User.js";
 
 export interface AuthRequest extends Request{
+    [x: string]: any;
     user?: any;
 }
 
