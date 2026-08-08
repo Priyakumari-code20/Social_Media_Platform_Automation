@@ -3,6 +3,7 @@ import { Post } from "../models/Post.js";
 import { Account } from "../models/Account.js";
 import zernio from "../config/zernio.js";
 import { ActivityLog } from "../models/ActivityLog.js";
+import { platform } from "os";
 
 export const initScheduler = ()=>{
     cron.schedule("* * * * *", async ()=>{
@@ -27,7 +28,7 @@ export const initScheduler = ()=>{
                          continue;
                     }
                     const zernioPlatforms = accounts.map((acc)=>({
-                        tform: acc.platform as any,
+                        platform: acc.platform as any,
                         accountId: acc.zernioAccountId!
 
                     }))
