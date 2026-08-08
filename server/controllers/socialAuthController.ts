@@ -7,19 +7,20 @@ import { AuthRequest } from "../middlewares/authMiddleware.js";
 
 const getOrCreateZernioProfile = async (user:any) : Promise<string> => {
     try{
+
         const result = await zernio.profiles.listProfiles()
         const data = result.data as any;
         const profiles: any[] = Array.isArray(data)? data : data?.Profiles || data?.data || [];
 
         if(profiles.length > 0){
-            const pid = profiles[0]._id || profiles[0].id
-            await User.findByIdAndUpdate(user._id, {zernioProfileId: pid})
+            const pid = profiles[0]._id || profiles[0].id;
+            await User.findByIdAndUpdate(user._id, {zernioProfileId: pid});
             return pid;
         }
 
         const createResult = await zernio.profiles.createProfile({
             body: {name: `${user.name || user.email}'s workspace`} as any,
-        })
+        });
 
         const created = (createResult.data as any)?.profile || createResult.data;
         const pid = created?._id || created?.id;
@@ -76,7 +77,7 @@ Promise<void> => {
 
 }
 
-//Sync connected accoungts from Zernio into MongoDB
+//Sync connected accounts from Zernio into MongoDB
 //GET /api/auth/sync-accounts
 
 export const syncAccounts = async(req: AuthRequest, res: Response) : 
@@ -85,9 +86,9 @@ Promise<void> => {
         const profileId = await getOrCreateZernioProfile(req.user);
         const result = await zernio.accounts.listAccounts({
             query: {profileId} as any
-        });
+        })
         const data = result.data as any;
-        const ZernioAccounts: any[] =  data?.Accounts || (Array.isArray(data)? data : data?.data || []);
+        const ZernioAccounts: any[] =  data?.Accounts || (Array.isArray(data)? data : []);
         const supportedPlatforms = ["twitter", "linkedin", "facebook", "instagram"];
         const syncedAccounts = [];
 
@@ -109,14 +110,14 @@ Promise<void> => {
             const account = await Account.findOneAndUpdate(
                 {zernioAccountId: zid},
                 {
-                    user: req.user._id,
+                    userId: req.user._id,
                     platform: normalizedPlatform,
-                    handle: zAccount.handle || zAccount.username || zAccount.name || "unknown",
+                    handle: zAccount.handle || zAccount.username || zAccount.name || "Unknown",
                     zernioAccountId: zid,
                     status: "connected",
                     avatarUrl: zAccount.avatarUrl || zAccount.picture || zAccount.profile_image_url, 
                 },
-                {upsert: true, returnDocument: "after"}
+                {upsert: true, returnDocument: 'after'}
             )
             syncedAccounts.push(account)
 

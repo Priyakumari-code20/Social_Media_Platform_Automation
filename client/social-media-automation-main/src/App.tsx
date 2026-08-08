@@ -2,14 +2,16 @@ import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Layout from "./components/Layout";
-import Dashboard from "./pages/dashboard";
+import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import AIComposer from "./pages/AIComposer";
 import Scheduler from "./pages/Scheduler";
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
     return (
         <>
+            <Toaster position="top-right"/>
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
