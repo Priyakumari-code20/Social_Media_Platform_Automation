@@ -160,7 +160,7 @@ const Scheduler = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-slate-500 uppercase mb-2">Date</label>
+                <label className="block text-xs text-slate-500 uppercase mb-2">Time</label>
                 <div className="relative">
                   <ClockIcon className=" size-4 absolute left-3 top-1/2 -translate-y-1/2 
                   text-slate-400 pointer-events-none" />

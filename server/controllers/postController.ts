@@ -1,46 +1,11 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/authMiddleware.js";
 import { GoogleGenAI } from "@google/genai";
-import axios from "axios";
 import { cloudinary } from "../config/cloudinary.js";
 import { Generation } from "../models/Generation.js";
 import { Post } from "../models/Post.js";
+import axios from "axios";
 
-// helper to poll aimlapi
-const pollaimlapi = async (generationId: string, apikey: string): Promise<string> => {
-    const maxRetries = 20;
-    const delay = 5000;
-
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            const response = await axios.get(`https://api.aimlapi.com/v1/chat/completions/${generationId}`, {
-                headers: {
-                    accept: "application/json",
-                    authorization: `Bearer ${apikey}`
-                }
-            });
-
-            const generation = response.data.generations_by_pk;
-            if (generation.status === "COMPLETE") {
-                if (generation.generated_images && generation.generated_images.length > 0) {
-                    return generation.generated_images[0].url;
-                }
-                throw new Error("Generation complete but no images found.");
-            }
-            if (generation.status === "FAILED") {
-                throw new Error("AIMLAPI generation failed.");
-            }
-        } catch (err: any) {
-            console.error("Polling error:", err?.response?.data || err.message);
-        }
-
-        if (i < maxRetries - 1) {
-            await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-    }
-
-    throw new Error("AIMLAPI generation timed out.");
-};
 
 // Generate Post
 // POST /api/posts/generate
@@ -57,7 +22,7 @@ export const generatePost = async (req:AuthRequest, res: Response): Promise<void
 
         // Generate text
         const textResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.6-flash",
             contents: `Generate a social media post based on this prompt: "${prompt}"
             Tone: ${tone}.
             Include relevant hashtags.
@@ -80,50 +45,28 @@ export const generatePost = async (req:AuthRequest, res: Response): Promise<void
         }
 
         let mediaUrl = "";
-        if(generateImage){
+        if (generateImage) {
             try {
-                const aimlapikey = process.env.AIMLAPI_API_KEY;
-                if(aimlapikey){
-                    // Use aimlapi for image generation
-                    const aimlapiResponse = await axios.post(
-                        "https://api.aimlapi.com/v1/chat/completions",
-                        {
-                            "pubilc": false,
-                            "model": "openai/gpt-5-5",
-                            "paramters":{
-                                "quality": "LOW",
-                                "prompt": imagePrompt,
-                                "quantity": 1,
-                                "width": 1024,
-                                "height": 1024,
-                                "prompt_enhance": "OFF"
-                            }
-                        },{
-                            headers: {
-                                accept: "application/json",
-                                authorization: `Bearer ${aimlapikey}`,
-                                "Content-Type": "application/json",
-                            }
+                const encodedPrompt = encodeURIComponent(imagePrompt);
+                const tempUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true&referrer=myapp.local`;
 
-                        }
+                // Fetch the image bytes ourselves
+                const imageBuffer = await axios.get(tempUrl, {
+                    responseType: "arraybuffer",
+                });
 
-                    )
+                const base64Image = Buffer.from(imageBuffer.data, "binary").toString("base64");
+                const dataUri = `data:image/png;base64,${base64Image}`;
 
-                    const generationId = aimlapiResponse.data.generate.generationId;
-                    const tempUrl = await pollaimlapi(generationId, aimlapikey);
-
-                    // Upload to cloudinary for persistence
-                    const uploadResult = await cloudinary.uploader.upload(tempUrl, {
-                        folder:"ai-generations",
-                    })
-                    mediaUrl = uploadResult.secure_url;
-                }
+                const uploadResult = await cloudinary.uploader.upload(dataUri, {
+                    folder: "ai-generations",
+                });
+                mediaUrl = uploadResult.secure_url;
             } catch (err: any) {
-                console.error("Image generation failed:", err);
-                
+                console.error("Image generation failed:", err?.response?.data || err.message);
             }
         }
-
+    
         // Save generation to DB
 
         const generation = await Generation.create({

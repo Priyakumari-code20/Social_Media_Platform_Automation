@@ -5,8 +5,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 const generateToken = (id: string) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || "fallback_secret", 
-        { expiresIn: '30d'} );
+    return jwt.sign({ id }, process.env.JWT_SECRET!, { expiresIn: '30d'} );
 }
 
 // Register user
