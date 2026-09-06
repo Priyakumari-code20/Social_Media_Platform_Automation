@@ -22,8 +22,8 @@ const Accounts = () => {
         toast.success(successMsg || "Account synced!", {id:"sync"})
       }
 
-      const{data} = await api.get("/api/accounts")
-      setAccounts(data)
+      const { data } = await api.get("/api/accounts");
+      setAccounts( Array.isArray(data) ? data: data?.accounts || data?.syncedAccounts || []);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || error?.message || "Failed to load accounts");
       
