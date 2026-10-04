@@ -66,7 +66,7 @@ export const generatePost = async (req:AuthRequest, res: Response): Promise<void
                 console.error("Image generation failed:", err?.response?.data || err.message);
             }
         }
-    
+
         // Save generation to DB
 
         const generation = await Generation.create({
